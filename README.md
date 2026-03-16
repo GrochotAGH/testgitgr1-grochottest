@@ -23,3 +23,4 @@ Skonfiguruj tozsamość:
 6. Złącz (merge) gałąź konfiguracja z powrotem do gałęzi main.
 
 7. Wypchnij (push) zmiany z gałęzi main na serwer.
+dsd
