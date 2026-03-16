@@ -1,0 +1,69 @@
+name: Autograding Tests
+'on':
+- push
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: test -f config.json
+      id: test-f-config-json
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: test -f config.json
+        setup-command: ''
+        command: test -f config.json
+        timeout: 10
+    - name: 'grep -q ''"status": "gotowe"'' config.json'
+      id: grep-q-status-gotowe-config-json
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: 'grep -q ''"status": "gotowe"'' config.json'
+        setup-command: ''
+        command: 'grep -q ''"status": "gotowe"'' config.json'
+        timeout: 10
+    - name: git log --oneline | grep -q "Dodano plik konfiguracyjny"
+      id: git-log-oneline-grep-q-dodano-plik-konfiguracyjny
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: git log --oneline | grep -q "Dodano plik konfiguracyjny"
+        setup-command: ''
+        command: git log --oneline | grep -q "Dodano plik konfiguracyjny"
+        timeout: 10
+    - name: COUNT=$(git rev-list --count HEAD); if [ $COUNT -ge 2 ]; then exit 0;
+        else exit 1; fi
+      id: count-git-rev-list-count-head-if-count-ge-2-then-exit-0-else-exit-1-fi
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: COUNT=$(git rev-list --count HEAD); if [ $COUNT -ge 2 ]; then exit
+          0; else exit 1; fi
+        setup-command: ''
+        command: COUNT=$(git rev-list --count HEAD); if [ $COUNT -ge 2 ]; then exit
+          0; else exit 1; fi
+        timeout: 10
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        TEST-F-CONFIG-JSON_RESULTS: "${{steps.test-f-config-json.outputs.result}}"
+        GREP-Q-STATUS-GOTOWE-CONFIG-JSON_RESULTS: "${{steps.grep-q-status-gotowe-config-json.outputs.result}}"
+        GIT-LOG-ONELINE-GREP-Q-DODANO-PLIK-KONFIGURACYJNY_RESULTS: "${{steps.git-log-oneline-grep-q-dodano-plik-konfiguracyjny.outputs.result}}"
+        COUNT-GIT-REV-LIST-COUNT-HEAD-IF-COUNT-GE-2-THEN-EXIT-0-ELSE-EXIT-1-FI_RESULTS: "${{steps.count-git-rev-list-count-head-if-count-ge-2-then-exit-0-else-exit-1-fi.outputs.result}}"
+      with:
+        runners: test-f-config-json,grep-q-status-gotowe-config-json,git-log-oneline-grep-q-dodano-plik-konfiguracyjny,count-git-rev-list-count-head-if-count-ge-2-then-exit-0-else-exit-1-fi
+    - name: Wyślij wynik do bazy
+      if: always()
+      run: |
+          curl -X POST ${{ secrets.CF_WORKER_URL }} \
+          -H "Authorization: Bearer ${{ secrets.CF_API_SECRET }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "uczen": "${{ github.actor }}",
+            "id_kartkowki": "kartkowka_git", 
+            "punkty": "${{ steps.autograding.outputs.Points || '0' }}"
+          }'
